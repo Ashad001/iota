@@ -1,6 +1,6 @@
-# 08 — CREATIVE MATRIX: one angle, many ads
+# 09 — CREATIVE MATRIX: one angle, many ads
 
-`00-MASTER-BRIEF.md` step 13 produces one video per selected source ad. That is not
+`01-MASTER-BRIEF.md` step 13 produces one video per selected source ad. That is not
 how paid social is actually run. A media buyer needs a **testable matrix** and a plan
 for what to test in what order. This file specs the fan-out.
 
@@ -21,8 +21,8 @@ This is the correct default — it isolates the hook, which is the highest-lever
 variable and the only one worth testing first at small budgets.
 
 Expansions the user can turn on at the gate:
-- `+contrast format` -> 6 videos. Use when the source cluster contains two distinct
-  formats carrying the same angle.
+- `+contrast format` -> 6 videos. Use when the source cluster in the submitted evidence contains
+  two distinct formats carrying the same angle.
 - `+aspects` -> reframes, generated at stage 14, not re-generated from scratch.
 - `+locales` -> §4.
 
@@ -116,7 +116,7 @@ to produce the alternatives:
 - **Copy-only variants** — 3 primary-text options per asset from the script's angle,
   for the same creative. Meta tests text cheaply; give the buyer the ammunition.
 
-Gate this on `gen-media-router`'s verdict (`04 §6`) when it is installed, and always
+Gate this on `gen-media-router`'s verdict (`05 §6`) when it is installed, and always
 show it in the timeline as an explicit node so the choice is visible.
 
 ## 6. Message match — check the destination

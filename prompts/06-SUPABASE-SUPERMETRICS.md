@@ -37,12 +37,12 @@ backend/               # as 01-BACKEND.md, minus its own storage + auth layers
 web/
 ```
 
-Local dev is `supabase start`. Everything in `01 §2` becomes a migration. Enable
+Local dev is `supabase start`. Everything in `02 §3` becomes a migration. Enable
 `vector`, `pg_cron`, `pg_net`, `pg_trgm`.
 
 ### A3. Multi-tenancy via RLS — do this on day one
 
-Add `workspace_id uuid not null` to **every** domain table in `01 §2`. This is not
+Add `workspace_id uuid not null` to **every** domain table in `02 §3`. This is not
 optional and retrofitting it later is painful.
 
 ```sql
@@ -80,7 +80,7 @@ sees another tenant's rows.
 
 ### A4. Realtime replaces the hand-rolled SSE
 
-`01 §3`'s `GET /v1/runs/{id}/events` goes away. Two channels, deliberately split:
+`02 §4`'s `GET /v1/runs/{id}/events` goes away. Two channels, deliberately split:
 
 **Durable step transitions -> `postgres_changes` on `run_steps`.**
 Survives reconnects, replayable from the table, exactly the 15 nodes the UI draws.
@@ -94,17 +94,18 @@ supabase.channel(`run:${runId}`)
 ```
 
 **High-frequency progress -> Realtime `broadcast`, never the database.**
-"Nike / AE / ar — page 3 of ~7" fires hundreds of times per run. Writing each tick to
+"Competitor B / AE / ar — item 11 of 14" fires hundreds of times per run. Writing each tick to
 Postgres is pure waste and makes `run_steps` unreadable.
 
 ```python
 await supabase.channel(f"run:{run_id}").send_broadcast(
-    "progress", {"step": "ADS_HARVEST", "done": 118, "total": 300, "message": "..."})
+    "progress", {"step": "EVIDENCE_NORMALIZE", "done": 11, "total": 14,
+                 "message": "Competitor B / AE / ar — screenshot 3"})
 ```
 
 Broadcast is lossy by design; that is correct here. On reconnect the UI resyncs
 authoritative state from `run_steps` and simply resumes ticking. Keep the frontend
-rule from `03 §2`: never render from the stream alone.
+rule from `04 §2`: never render from the stream alone.
 
 ### A5. Storage
 
@@ -184,7 +185,7 @@ it doesn't do that. Competitor data comes from `adapters/adsource/` and only the
 
 ### B2. Why use it instead of calling the Meta Marketing API directly
 
-`05 §2 phase 17` originally specced a direct Insights client. Supermetrics replaces it
+`07 §2 phase 17` originally specced a direct Insights client. Supermetrics replaces it
 and is the better trade for this app:
 
 - No `ads_read`/`ads_management` app review to unblock measurement (you still need
@@ -257,9 +258,9 @@ The join key between AdMirror and Supermetrics is the Meta `ad_id` returned by p
 
 Rows that match none of these are **not** AdMirror ads — keep them anyway. The
 account's non-AdMirror ads are exactly what you need for the trailing-median baseline
-in `05 §2 phase 17`. Store them with `admirror_video_id = null`.
+in `07 §2 phase 17`. Store them with `admirror_video_id = null`.
 
-### B5. What this unlocks in `05 §2 phase 18`
+### B5. What this unlocks in `07 §2 phase 18`
 
 With multi-channel owned data flowing, the hook pattern library gains a `channel`
 dimension: the same angle can win on Meta and die on TikTok, and after a few hundred

@@ -1,4 +1,4 @@
-# 04 — SKILL REFERENCES
+# 05 — SKILL INTEGRATION
 
 The generation half of AdMirror (steps 11–13) must run through the operator's own
 Claude Skills. This file defines how they mount and how each one is called.
@@ -19,29 +19,27 @@ Do not reimplement any of the above in Python. If `seedance-2-prompter` says the
 duration ceiling is 15s and 1080p is the finalize tier, that constraint comes from the
 skill file at runtime — do not hard-code it in a validator that will silently go stale.
 
-## 2. Mounting
+## 2. Mounting — the skills ship inside this pack
 
-Skills are directories containing `SKILL.md` with YAML frontmatter (`name`,
-`description`). The operator's `seedance-2-prompter` currently lives at
-`~/.claude/skills/seedance-2-prompter/SKILL.md`; the others come from an installed
-plugin namespace.
+**The actual skill files are bundled in `12`–`18`.** Five skills, 101 files, 1.5 MB,
+split into seven thematic markdown bundles. `19-SKILL-MANIFEST.md` carries the
+provenance, the per-file SHA-256 table, and the unbundle script that reconstructs the
+mountable tree byte-for-byte (verified: 101 files, zero mismatches).
 
-For the backend, **vendor them into the repo** so runs are reproducible and container
-images are self-contained:
-
-```
-backend/
-  skills/
-    script-writer/SKILL.md
-    nano-banana-prompter/SKILL.md
-    seedance-2-prompter/SKILL.md
-    seedance-director/SKILL.md        # if available
+```bash
+python unbundle.py . backend/.claude/skills     # script is in 19-SKILL-MANIFEST.md §4
 ```
 
-Add a `make sync-skills` target that copies from the operator's skill sources and
-records each skill's content hash in `skills/MANIFEST.json`. Every `scripts`,
-`frames` and `videos` row stores the hash of the skill that produced it. When a skill
-is updated, you can tell exactly which outputs predate the change.
+Vendor, never symlink to `~/.claude/skills`. A container must carry its own skills, and
+a generated ad must be attributable to the exact skill bytes that produced it.
+
+Every `scripts`, `frames` and `videos` row stores the tree hash of the skill that
+produced it, so when a skill is updated you can tell exactly which outputs predate the
+change.
+
+The bundles are also readable directly. An agent that needs Gulf casting guidance, or
+the Seedance camera registers, or the retention-engineering reference, can read the
+relevant bundle without mounting anything — see the routing table in `README.md`.
 
 ## 3. Invoking (Claude Agent SDK, Python)
 

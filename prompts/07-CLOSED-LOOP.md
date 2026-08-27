@@ -1,22 +1,22 @@
-# 05 — CLOSED LOOP: your own ad account
+# 07 — CLOSED LOOP: your own ad account
 
-Read `00-MASTER-BRIEF.md` first. This file fixes the largest gap in the base spec:
+Read `01-MASTER-BRIEF.md` first. This file fixes the largest gap in the base spec:
 **AdMirror as originally specced generates an ad and never finds out whether it
-worked.** Everything in files 00–04 is inference off public data. This file connects
+worked.** Everything in files 01–04 is inference off evidence the user captured. This file connects
 the one source of *measured* truth available — the user's own ad account — and turns
 the product from a generator into a system that learns.
 
 ## 1. Why this is the highest-value addition
 
-The competitor half of the app can never measure anything (see `00 §4`). But the
+The competitor half of the app can never measure anything (see `02 §4`). But the
 user's own Meta ad account has real `impressions`, `spend`, `ctr`, `thumbstop rate`,
 `hook retention`, `cost per result`. Three things unlock at once:
 
 1. **Ground truth on AdMirror's output.** Did the generated ad beat the account
    average? That's the only honest answer to "does this product work".
-2. **Calibration of the Proxy Performance Score.** Once you have N generated ads with
+2. **Calibration of the Evidence-Backed Opportunity Score.** Once you have N generated ads with
    real results traced back to the source angles that inspired them, you can regress
-   actual performance against PPS components and re-fit the weights in `01 §7` from
+   actual performance against EBOS components and re-fit the weights in `02 §7` from
    data instead of judgement. The weights table becomes empirical.
 3. **Brand-accurate reference assets.** The user's own best ads are the correct
    reference images for identity locking in stage 12.
@@ -26,7 +26,7 @@ user's own Meta ad account has real `impressions`, `spend`, `ctr`, `thumbstop ra
 Insert around the existing 15:
 
 ```
- 0  SELF_HARVEST     the user's own Meta page, through the same Ad Library path
+ 0  SELF_BASELINE    the user's own ads, from their own connected ad account
  …  (existing 1-15)
 16  PUBLISH          push generated creative to Ads Manager as a PAUSED draft
 17  MEASURE          pull Insights on published ads, attribute back to source angles
@@ -36,21 +36,28 @@ Insert around the existing 15:
 Phases 16–18 are optional per workspace and gated on the user connecting an account.
 The app must remain fully functional without them.
 
-### Phase 0 — SELF_HARVEST
+### Phase 0 — SELF_BASELINE
 
-Run the exact same Ad Library harvest against the user's *own* page ID, in the same
-market. Costs almost nothing and produces three things:
+The user's own ads come from **their own connected ad account**, not from the Ad
+Library. This is data they own and have authorised access to, so it needs no capture
+step and carries real metrics. Pull their last 90 days of ads via the measurement
+adapter (`06` Part B) and produce three things:
 
-- **A baseline row on the leaderboard.** Show the user's own best ad ranked alongside
-  competitors, same PPS, same evidence line. This single UI element is the most
-  persuasive thing in the app — "your longest-running ad is 31 days; theirs is 94."
+- **A baseline row on the board.** Show the user's own best ad alongside the submitted
+  competitor evidence. Label the asymmetry honestly: their own row carries MEASURED
+  performance, the competitor rows carry evidence-backed opportunity scores. Do not
+  render one number that spans both — they are different quantities, and a shared
+  ring would imply a comparison the data cannot support.
 - **Their own voice, evidenced.** Feed their real ad copy into the Brand Dossier's
   `voice` field instead of inferring register from a homepage.
 - **Brand reference imagery** for stage 12 identity locking, pulled from creative they
   already ran and already cleared.
 
-Store with `is_own_brand = true` on `ads`. Never let own-brand ads contaminate
-competitor cohort percentile bases in scoring — filter them out of `p95()` inputs.
+Store with `is_own_brand = true` on `ads`. Never let own-brand ads enter the evidence
+batch percentile bases — filter them out of `p95()` inputs in `02 §7`.
+
+If no ad account is connected, phase 0 is skipped and the user may optionally submit
+their own ads as evidence like any other advertiser.
 
 ### Phase 16 — PUBLISH
 
@@ -78,7 +85,7 @@ with the user's own account first; note the review dependency in the README.
 
 ### Phase 17 — MEASURE
 
-> **Overridden by `06-SUPABASE-AND-SUPERMETRICS.md` Part B:** measurement is pulled
+> **Overridden by `06-SUPABASE-SUPERMETRICS.md` Part B:** measurement is pulled
 > through Supermetrics rather than a direct Meta Insights client. The derived metrics,
 > the trailing-median baseline and the `MEASURED`-only-for-own-ads rule below all
 > stand unchanged — only the transport changes.
@@ -115,7 +122,7 @@ leak into competitor cards.
 Two artefacts, both cross-run and cross-brand:
 
 **a. Weight re-fit.** Once ≥ 40 published ads have ≥ 7 days of data, regress
-normalised `cost_per_result` lift against the PPS component values of each ad's
+normalised `cost_per_result` lift against the EBOS component values of each ad's
 source angle. Output a proposed weight vector. **Propose, never auto-apply** — show
 the operator the old weights, the new weights, the sample size and the fit quality,
 and let them accept. Auto-tuning a scoring model on 40 noisy samples is how you build
@@ -175,23 +182,24 @@ Return:
 
 - **S1 Intake:** "Connect Meta ad account" as an optional step, clearly marked as
   unlocking real measurement. Explain what is read and that nothing is ever launched.
-- **S3 Leaderboard:** the user's own best ad pinned at the top of the board in a
+- **S4 Evidence Board:** the user's own best ad pinned at the top of the board in a
   distinct "You" row, same metric treatment, same score derivation.
 - **S6 Generation timeline:** a final `Publish to Ads Manager (paused)` node.
-- **New S8 — Results** `/results`: every published AdMirror ad with real metrics
+- **New S10 — Results** `/results`: every published AdMirror ad with real metrics
   indexed to account median, the `performance_attributor` diagnosis, and a one-click
   "generate the next iteration" that feeds `next_iteration` straight back into the
   angle transfer stage as overrides.
-- **New S9 — Patterns** `/patterns`: the hook pattern library, filterable by category
+- **New S11 — Patterns** `/patterns`: the hook pattern library, filterable by category
   and market, with sample sizes shown on every cell. Grey out any cell with n < 5
   rather than showing a seductive number built on three data points.
 
 ## 5. Definition of done
 
-- [ ] Self-harvest puts the user's own best ad on the board with a real PPS.
+- [ ] Self-baseline puts the user's own best ad on the board with MEASURED metrics,
+      visibly distinguished from evidence-backed competitor scores.
 - [ ] A generated video reaches Ads Manager as a paused draft with all three hook
       variants and correct attribution tags.
 - [ ] Insights land nightly and index correctly against account trailing median.
 - [ ] The attributor refuses to diagnose an ad with < 1,000 impressions.
 - [ ] Weight re-fit runs, proposes, and requires explicit operator acceptance.
-- [ ] Own-brand ads are provably excluded from competitor percentile bases.
+- [ ] Own-brand ads are provably excluded from evidence-batch percentile bases.
